@@ -16,9 +16,7 @@ This project builds a **Security Orchestration, Automation, and Response (SOAR)*
 2. **Ingest** — SNS delivers the alert to a Tines webhook.
 3. **Enrich** — The event is parsed and passed to an AI agent that generates a plain-English explanation of what happened, who did it, and why it matters.
 4. **Track** — A Jira case is automatically created with the enriched context so the finding is visible from detection through resolution.
-5. **Remediate** — Based on the finding type, Tines takes targeted action: re-applying S3 Block Public Access, isolating EC2 instances via security groups, or revoking compromised IAM role sessions — then logs each action back to the Jira ticket.
-
-The result is a repeatable pipeline that shrinks the gap between detection and response from *manual and minutes-to-hours* to *automated and near-instant*.
+5. **Remediate** — Based on the finding type, Tines takes targeted action: re-applying S3 Block Public Access, updating the affected EC2 instance's security group, or revoking IAM role sessions — then logs each action back to the Jira ticket.
 
 ---
 
@@ -88,7 +86,7 @@ The Tines Story is organized into an ingestion phase, an enrichment phase, and t
 | Finding type | Detection | Response action | Follow-up |
 |--------------|-----------|-----------------|-----------|
 | **S3 exposure** | Check for S3 public bucket policy → verify bucket should not be public | Apply S3 Block Public Access policy | Comment result to Jira |
-| **EC2 command & control** | Check for EC2 C2 finding | Set (isolate via) EC2 security group | Comment result to Jira |
+| **EC2 command & control** | Check for EC2 C2 finding | Update EC2 security group | Comment result to Jira |
 | **Credential exfiltration** | Check for credential exfiltration | Revoke IAM role sessions | Comment result to Jira |
 
 ### Credentials & resources used
@@ -125,10 +123,9 @@ The environment used for validation, with 410+ findings across all severity leve
 
 To prove the pipeline works end-to-end, I generated GuardDuty findings in a controlled AWS environment and traced each event through the workflow:
 
-- **Generated real findings** — including S3 Block Public Access being disabled — and confirmed they flowed from GuardDuty → SNS → Tines → Jira.
-- **Traced events** at each stage to verify the payload was parsed and routed correctly.
-- **Debugged conditional logic** — identified inconsistencies in the branch conditions that caused certain findings to skip their intended remediation action, and corrected the event-parsing and routing logic so downstream responses fired reliably.
-- **Confirmed remediation** — verified that response actions (e.g., re-applying S3 block policy) executed and were logged back to the corresponding Jira case.
+- **Generated real findings** — including the S3 Block Public Access finding shown above — and confirmed they flowed from GuardDuty → SNS → Tines → Jira.
+- **Traced events** at each stage of the workflow to check the payload was being parsed and routed as expected.
+- **Debugged conditional logic** — identified inconsistencies in the branch conditions that were affecting downstream response actions, and corrected the event-parsing and routing logic.
 
 ---
 
@@ -148,13 +145,10 @@ To prove the pipeline works end-to-end, I generated GuardDuty findings in a cont
 ```
 .
 ├── README.md
-├── images/
-│   ├── tines-workflow.png
-│   ├── guardduty-finding-s3.png
-│   ├── jira-ticket.png
-│   └── guardduty-summary.png
-└── tines/
-    └── story.json          # (optional) exported Tines Story
+├── tines-workflow.png
+├── guardduty-finding-s3.png
+├── jira-ticket.png
+└── guardduty-summary.png
 ```
 
 ---
