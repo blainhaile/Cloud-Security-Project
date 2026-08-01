@@ -102,22 +102,22 @@ The Tines Story is organized into an ingestion phase, an enrichment phase, and t
 ### 1. Tines SOAR Workflow
 The full detection-to-remediation Story: SNS ingestion, AI enrichment, Jira case creation, and three conditional remediation branches.
 
-![Tines SOAR workflow](images/tines-workflow.png)
+![Tines SOAR workflow](tines-workflow.png)
 
 ### 2. GuardDuty Finding
 A live finding — `Policy:S3/BucketBlockPublicAccessDisabled` — showing that S3 Block Public Access was disabled on a bucket by the root user via `PutBucketPublicAccessBlock`.
 
-![GuardDuty S3 finding](images/guardduty-finding-s3.png)
+![GuardDuty S3 finding](guardduty-finding-s3.png)
 
 ### 3. Auto-Generated Jira Case
 The AI-enriched Jira ticket created by the workflow, translating the raw finding into a structured summary: what happened, who made the change, what changed, when, and where the request originated.
 
-![Jira case](images/jira-ticket.png)
+![Jira case](jira-ticket.png)
 
 ### 4. GuardDuty Summary Dashboard
 The environment used for validation, with 410+ findings across all severity levels and multiple attack sequences.
 
-![GuardDuty summary dashboard](images/guardduty-summary.png)
+![GuardDuty summary dashboard](guardduty-summary.png)
 
 ---
 
