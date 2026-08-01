@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWS GuardDuty SOAR Pipeline — Tines · AWS · Jira</title>
+<meta name="description" content="Automated detection-to-remediation pipeline for AWS GuardDuty findings, built with Tines, AWS, and Jira.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FCFCFA;
+    --surface:#F5F6F3;
+    --line:#E3E5E0;
+    --ink:#16181C;
+    --muted:#5B6169;
+    --accent:#3B3FA8;
+    --crit:#B3261E;
+    --high:#D9480F;
+    --med:#E8890C;
+    --low:#C9A227;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:underline; text-underline-offset:2px;}
+  img{max-width:100%; display:block; border-radius:4px; border:1px solid var(--line);}
+
+  .wrap{max-width:800px; margin:0 auto; padding:0 24px;}
+
+  .topbar{border-bottom:1px solid var(--line); padding:18px 0;}
+  .topbar .wrap{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand{font-weight:600; font-size:14px; letter-spacing:-0.01em;}
+  .status-pill{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+  .status-dot{width:6px; height:6px; border-radius:50%; background:var(--low);}
+
+  .hero{padding:72px 0 48px;}
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 20px;}
+  h1{font-size:clamp(30px, 4.2vw, 42px); line-height:1.2; margin:0 0 20px; font-weight:700; letter-spacing:-0.02em; max-width:16ch;}
+  .lede{font-size:18px; color:var(--muted); max-width:58ch; margin:0 0 32px;}
+  .stack{display:flex; flex-wrap:wrap; gap:8px 18px; font-size:13px; color:var(--muted);}
+  .stack span::before{content:"·"; margin-right:18px; color:var(--line);}
+  .stack span:first-child::before{content:none; margin-right:0;}
+
+  .severity{margin-top:48px; padding-top:32px; border-top:1px solid var(--line);}
+  .severity-label{display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; color:var(--muted);}
+  .severity-label strong{color:var(--ink); font-weight:600;}
+  .severity-bar{display:flex; width:100%; height:8px; border-radius:4px; overflow:hidden; background:var(--surface);}
+  .severity-bar span{display:block; height:100%;}
+  .seg-crit{background:var(--crit);} .seg-high{background:var(--high);} .seg-med{background:var(--med);} .seg-low{background:var(--low);}
+  .severity-legend{display:flex; flex-wrap:wrap; gap:20px; margin-top:14px; font-size:13px; color:var(--muted);}
+  .severity-legend div{display:flex; align-items:center; gap:6px;}
+  .dot{width:7px; height:7px; border-radius:2px; flex:none;}
+
+  section{padding:56px 0; border-top:1px solid var(--line);}
+  h2{font-family:var(--mono); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 32px; font-weight:500;}
+  h3{font-size:17px; font-weight:600; margin:0 0 8px; color:var(--ink);}
+  p{color:var(--muted); margin:0 0 16px;}
+  .prose p{max-width:66ch;}
+
+  .steps{list-style:none; margin:0; padding:0;}
+  .steps li{display:grid; grid-template-columns:34px 1fr; gap:16px; padding:20px 0; border-top:1px solid var(--line);}
+  .steps li:first-child{border-top:none; padding-top:0;}
+  .step-num{font-family:var(--mono); color:var(--muted); font-size:13px; padding-top:2px;}
+  .step-title{font-weight:600; color:var(--ink); margin-bottom:3px; font-size:15px;}
+  .step-body{color:var(--muted); font-size:15px; max-width:60ch;}
+
+  .table-wrap{border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-bottom:28px;}
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th, td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top;}
+  thead th{font-family:var(--mono); font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); font-weight:500; background:var(--surface);}
+  td{color:var(--ink); font-size:14px;}
+  td.dim{color:var(--muted);}
+  tr:last-child td{border-bottom:none;}
+
+  code{font-family:var(--mono); background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:1px 6px; font-size:12.5px; color:var(--ink);}
+  .kv{font-size:14px; color:var(--muted);}
+  .kv strong{color:var(--ink); font-weight:600;}
+
+  .shot{margin-bottom:48px;}
+  .shot:last-child{margin-bottom:0;}
+  .shot-cap{font-size:14px; color:var(--muted); margin-top:12px; max-width:66ch;}
+  .shot-tag{font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;}
+
+  .checklist{list-style:none; margin:0; padding:0;}
+  .checklist li{padding:16px 0; border-top:1px solid var(--line); color:var(--muted); font-size:15px; max-width:66ch;}
+  .checklist li:first-child{border-top:none;}
+  .checklist strong{color:var(--ink);}
+
+  .skills{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .skill{background:var(--bg); padding:16px 18px; font-size:13.5px; color:var(--muted);}
+  .skill strong{display:block; color:var(--ink); font-size:14px; margin-bottom:4px; font-weight:600;}
+
+  footer{padding:48px 0 64px;}
+  .footer-row{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;}
+  .footer-note{font-size:13px; color:var(--muted); max-width:44ch;}
+  .btn{display:inline-flex; align-items:center; gap:6px; background:var(--ink); color:#FFF; font-weight:600; padding:10px 18px; border-radius:5px; text-decoration:none; font-size:14px; white-space:nowrap;}
+  .disclaimer{margin-top:28px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px;}
+
+  @media (max-width:640px){
+    .hero{padding:48px 0 36px;}
+    section{padding:40px 0;}
+    .skills{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <span class="brand">GuardDuty SOAR Pipeline</span>
+    <span class="status-pill"><span class="status-dot"></span>Story enabled</span>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Cloud Security · SOAR Automation</p>
+    <h1>Turning GuardDuty findings into remediated, tracked Jira cases — automatically.</h1>
+    <p class="lede">An automated detection-to-remediation pipeline built with Tines, AWS, and Jira. GuardDuty findings are enriched by an AI agent, tracked as Jira cases, and remediated in real time.</p>
+    <div class="stack">
+      <span>Tines</span><span>AWS GuardDuty</span><span>Amazon SNS</span><span>EC2 / S3 / IAM</span><span>Jira</span><span>AI Agent Enrichment</span>
+    </div>
+
+    <div class="severity">
+      <div class="severity-label">
+        <span>Findings observed in validation environment</span>
+        <strong>410 total</strong>
+      </div>
+      <div class="severity-bar">
+        <span class="seg-crit" style="width:2.7%"></span>
+        <span class="seg-high" style="width:39.5%"></span>
+        <span class="seg-med" style="width:41.5%"></span>
+        <span class="seg-low" style="width:16.3%"></span>
+      </div>
+      <div class="severity-legend">
+        <div><span class="dot" style="background:var(--crit)"></span>Critical — 11</div>
+        <div><span class="dot" style="background:var(--high)"></span>High — 162</div>
+        <div><span class="dot" style="background:var(--med)"></span>Medium — 170</div>
+        <div><span class="dot" style="background:var(--low)"></span>Low — 67</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="prose">
+  <div class="wrap">
+    <h2>Overview</h2>
+    <p>Security teams drown in cloud alerts — this validation environment alone produced 410+ active GuardDuty findings across every severity level. Manually triaging each one is slow and inconsistent. This project automates the full lifecycle of a finding, from detection to a tracked, remediated case.</p>
+
+    <ol class="steps">
+      <li><span class="step-num">01</span><div><div class="step-title">Detect</div><div class="step-body">GuardDuty raises a finding and publishes it to an SNS topic.</div></div></li>
+      <li><span class="step-num">02</span><div><div class="step-title">Ingest</div><div class="step-body">SNS delivers the alert to a Tines webhook.</div></div></li>
+      <li><span class="step-num">03</span><div><div class="step-title">Enrich</div><div class="step-body">The event is parsed and passed to an AI agent that generates a plain-English explanation of what happened, who did it, and why it matters.</div></div></li>
+      <li><span class="step-num">04</span><div><div class="step-title">Track</div><div class="step-body">A Jira case is automatically created with the enriched context, giving visibility from detection through resolution.</div></div></li>
+      <li><span class="step-num">05</span><div><div class="step-title">Remediate</div><div class="step-body">Based on the finding type, Tines re-applies S3 Block Public Access, updates the affected EC2 instance's security group, or revokes IAM role sessions — then logs the action back to the Jira ticket.</div></div></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Workflow breakdown</h2>
+
+    <h3>Ingestion &amp; enrichment</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Step</th><th>Action</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>Receive SNS</td><td class="dim">Webhook</td><td class="dim">Entry point for SNS-delivered GuardDuty findings</td></tr>
+          <tr><td>Expand event</td><td class="dim">Event Transform</td><td class="dim">Flatten and normalize the raw SNS/GuardDuty payload</td></tr>
+          <tr><td>If initial SNS subscription</td><td class="dim">Condition → HTTP Request</td><td class="dim">Auto-confirms the SNS subscription handshake</td></tr>
+          <tr><td>Check for GuardDuty alert</td><td class="dim">Condition</td><td class="dim">Filters out non-finding traffic</td></tr>
+          <tr><td>Explain GuardDuty Alert</td><td class="dim">AI Agent</td><td class="dim">Generates the human-readable summary of the finding</td></tr>
+          <tr><td>Create issue in Jira</td><td class="dim">HTTP Request</td><td class="dim">Opens a tracked case with the enriched context</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Remediation branches</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Finding type</th><th>Detection</th><th>Response action</th><th>Follow-up</th></tr></thead>
+        <tbody>
+          <tr><td>S3 exposure</td><td class="dim">Check for S3 public bucket policy → verify bucket should not be public</td><td class="dim">Apply S3 Block Public Access policy</td><td class="dim">Comment result to Jira</td></tr>
+          <tr><td>EC2 command &amp; control</td><td class="dim">Check for EC2 C2 finding</td><td class="dim">Update EC2 security group</td><td class="dim">Comment result to Jira</td></tr>
+          <tr><td>Credential exfiltration</td><td class="dim">Check for credential exfiltration</td><td class="dim">Revoke IAM role sessions</td><td class="dim">Comment result to Jira</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="kv"><strong>Credentials:</strong> Jira Software, AWS CLI &nbsp;&nbsp;·&nbsp;&nbsp; <strong>Resources:</strong> <code>public_buckets</code> <code>jira_domain</code> <code>jira_username</code> <code>ec2_security_group_id</code></p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Screenshots</h2>
+
+    <div class="shot">
+      <div class="shot-tag">01 · Tines Story</div>
+      <h3>The full workflow</h3>
+      <img src="tines-workflow.png" alt="Tines SOAR workflow showing SNS ingestion, AI enrichment, Jira case creation, and three conditional remediation branches">
+      <p class="shot-cap">SNS ingestion, AI enrichment, Jira case creation, and three conditional remediation branches, laid out in Tines.</p>
+    </div>
+
+    <div class="shot">
+      <div class="shot-tag">02 · GuardDuty</div>
+      <h3>A live finding</h3>
+      <img src="guardduty-finding-s3.png" alt="GuardDuty finding showing S3 Block Public Access was disabled">
+      <p class="shot-cap"><code>Policy:S3/BucketBlockPublicAccessDisabled</code> — S3 Block Public Access was disabled on a bucket by the root user via <code>PutBucketPublicAccessBlock</code>.</p>
+    </div>
+
+    <div class="shot">
+      <div class="shot-tag">03 · Jira</div>
+      <h3>Auto-generated case</h3>
+      <img src="jira-ticket.png" alt="Jira ticket auto-generated by the workflow with an AI-written summary of the GuardDuty finding">
+      <p class="shot-cap">The AI-enriched Jira ticket created by the workflow: what happened, who made the change, what changed, when, and where the request originated.</p>
+    </div>
+
+    <div class="shot">
+      <div class="shot-tag">04 · GuardDuty</div>
+      <h3>Summary dashboard</h3>
+      <img src="guardduty-summary.png" alt="GuardDuty summary dashboard showing 410 total findings across severities">
+      <p class="shot-cap">The environment used for validation — 410+ findings across all severity levels and multiple attack sequences.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Validation &amp; testing</h2>
+    <p>To prove the pipeline works end-to-end, findings were generated in a controlled AWS environment and traced through the workflow:</p>
+    <ul class="checklist">
+      <li><strong>Generated real findings</strong> — including the S3 Block Public Access finding shown above — and confirmed they flowed from GuardDuty → SNS → Tines → Jira.</li>
+      <li><strong>Traced events</strong> at each stage of the workflow to check the payload was being parsed and routed as expected.</li>
+      <li><strong>Debugged conditional logic</strong> — identified inconsistencies in the branch conditions that were affecting downstream response actions, and corrected the event-parsing and routing logic.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Skills demonstrated</h2>
+    <div class="skills">
+      <div class="skill"><strong>SOAR / security automation</strong>Designing and deploying a multi-branch automated response workflow in Tines.</div>
+      <div class="skill"><strong>AWS security services</strong>Hands-on work with GuardDuty, SNS, S3, EC2, and IAM — access controls and exposure risks.</div>
+      <div class="skill"><strong>Event-driven integration</strong>Wiring SNS → webhook ingestion and parsing nested JSON payloads.</div>
+      <div class="skill"><strong>API integration</strong>Authenticated HTTP requests to the Jira and AWS APIs.</div>
+      <div class="skill"><strong>Incident management</strong>Mapping detections to trackable cases for full investigation lifecycle visibility.</div>
+      <div class="skill"><strong>Debugging &amp; validation</strong>Root-causing conditional logic errors and validating a pipeline with real, generated findings.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <p class="footer-note">Built in a controlled lab environment for learning and demonstration.</p>
+      <a class="btn" href="https://github.com/YOUR_USERNAME/YOUR_REPO_NAME" target="_blank" rel="noopener">View source on GitHub →</a>
+    </div>
+    <p class="disclaimer">All account IDs, access keys, IP addresses, and other sensitive identifiers have been redacted from the screenshots above.</p>
+  </div>
+</footer>
+
+</body>
+</html>
